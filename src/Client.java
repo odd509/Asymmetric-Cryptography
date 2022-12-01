@@ -16,14 +16,9 @@ import java.security.SignatureException;
 public class Client {
     public static void main(String[] args) throws Exception {
 
-        String username = "abt";
-        String serialNumber = "1234-5678-9012";
-
         File licenseFile = new File("license.txt");
 
-        System.out.println(getMac());
-        System.out.println(getDriverSerialNumber());
-        System.out.println(getMotherboardSerialNumber());
+        System.out.println(getHwSpecificInfo());
 
         if (licenseFile.exists()) {
 
@@ -31,9 +26,16 @@ public class Client {
 
         } else {
 
-            //
-
         }
+    }
+
+    public static String getHwSpecificInfo() {
+        String username = "abt";
+        String serialNumber = "1234-5678-9012";
+        String hwSpecificInfo = username + "$" + serialNumber;
+
+        hwSpecificInfo += "$" + getMac() + "$" + getDriverSerialNumber() + "$" + getSystemMotherBoard_SerialNumber();
+        return hwSpecificInfo;
     }
 
     public static String getMac() {
@@ -86,30 +88,68 @@ public class Client {
         return result.trim();
     }
 
-    public static String getMotherboardSerialNumber() throws IOException {
-        File file = File.createTempFile("realhowto", ".vbs");
-        file.deleteOnExit();
-        FileWriter fw = new java.io.FileWriter(file);
+    /**
+     * Method for get System Motherboard Serial Number
+     * 
+     * @return MAC Address
+     */
+    public static String getSystemMotherBoard_SerialNumber() {
 
-        String vbs = "Set objWMIService = GetObject(\"winmgmts:\\\\.\\root\\cimv2\")\n"
-                + "Set colItems = objWMIService.ExecQuery _ \n" + "   (\"Select * from Win32_BaseBoard\") \n"
-                + "For Each objItem in colItems \n" + "    Wscript.StdOut.Writeline objItem.SerialNumber \n"
-                + "    exit for  ' do the first cpu only! \n" + "Next \n";
-        fw.write(vbs);
-        fw.close();
-        Process p = Runtime.getRuntime().exec("cscript //NoLogo " + file.getPath());
-        BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
-        String line, result = new String();
-        while ((line = input.readLine()) != null) {
-            result += line;
+        String result = "";
+        try {
+            File file = File.createTempFile("realhowto", ".vbs");
+            file.deleteOnExit();
+            FileWriter fw = new java.io.FileWriter(file);
+
+            String vbs = "Set objWMIService = GetObject(\"winmgmts:\\\\.\\root\\cimv2\")\n"
+                    + "Set colItems = objWMIService.ExecQuery _ \n"
+                    + "   (\"Select * from Win32_BaseBoard\") \n"
+                    + "For Each objItem in colItems \n"
+                    + "    Wscript.Echo objItem.SerialNumber \n"
+                    + "    exit for  ' do the first cpu only! \n"
+                    + "Next \n";
+
+            fw.write(vbs);
+            fw.close();
+
+            Process p = Runtime.getRuntime().exec("cscript //NoLogo " + file.getPath());
+            BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            String line;
+            while ((line = input.readLine()) != null) {
+                result += line;
+            }
+            input.close();
+        } catch (Exception E) {
+            System.err.println("Windows MotherBoard Exp : " + E.getMessage());
         }
-        if (result.equalsIgnoreCase(" ")) {
-            System.out.println("Result is empty");
-        } else {
-            System.out.println("Result :>" + result);
+
+        if (result.trim().equals("Not Applicable")) {
+            result = "201075710502043";
         }
-        input.close();
-        return result;
+
+        return result.trim();
+
+    }
+
+    /**
+     * Method for get Linux Machine MotherBoard Serial Number
+     * 
+     * @return
+     */
+    private static String GetLinuxMotherBoard_serialNumber() {
+        String command = "dmidecode -s baseboard-serial-number";
+        String sNum = null;
+        try {
+            Process SerNumProcess = Runtime.getRuntime().exec(command);
+            BufferedReader sNumReader = new BufferedReader(new InputStreamReader(SerNumProcess.getInputStream()));
+            sNum = sNumReader.readLine().trim();
+            SerNumProcess.waitFor();
+            sNumReader.close();
+        } catch (Exception ex) {
+            System.err.println("Linux Motherboard Exp : " + ex.getMessage());
+            sNum = null;
+        }
+        return sNum;
     }
 
     public static boolean verifySig(byte[] digestToVerify, byte[] sigToVerify, PublicKey pubKey) {
