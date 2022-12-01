@@ -7,6 +7,11 @@ import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
+import java.security.Signature;
+import java.security.SignatureException;
 
 public class Client {
     public static void main(String[] args) throws Exception {
@@ -107,4 +112,17 @@ public class Client {
         return result;
     }
 
+    public static boolean verifySig(byte[] digestToVerify, byte[] sigToVerify, PublicKey pubKey) {
+        boolean verifies = false;
+        try {
+            Signature sig = Signature.getInstance("SHA256WithRSA");
+            sig.initVerify(pubKey);
+            sig.update(digestToVerify);
+            verifies = sig.verify(sigToVerify);
+        } catch (NoSuchAlgorithmException | InvalidKeyException | SignatureException e) {
+            e.printStackTrace();
+        }
+        return verifies;
+
+    }
 }
