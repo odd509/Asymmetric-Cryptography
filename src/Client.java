@@ -1,32 +1,90 @@
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.net.SocketException;
-import java.net.UnknownHostException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.PublicKey;
-import java.security.Signature;
-import java.security.SignatureException;
+
+import java.io.*;
+import java.net.*;
+import java.nio.charset.StandardCharsets;
+import java.security.*;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.Arrays;
+import java.util.Scanner;
+
+import javax.crypto.*;
 
 public class Client {
     public static void main(String[] args) throws Exception {
 
         File licenseFile = new File("license.txt");
-
-        System.out.println(getHwSpecificInfo());
-
+        byte[] signature;
         if (licenseFile.exists()) {
+            FileInputStream licenseIStream = new FileInputStream(licenseFile);
+            signature = new byte[(int) licenseFile.length()];
+            licenseIStream.read(signature);
+            licenseIStream.close();
 
-            //
+            if (verifySig(hash(getHwSpecificInfo()), signature, getPublicKey())) {
+                System.out.println("ture");
+            } else {
+                System.out.println("flsase");
+                licenseFile.delete();
+                Client.main(args);
+            }
 
         } else {
 
+            signature = LicenseManager.main(encryptHwSpecificInfo());
+            if (verifySig(hash(getHwSpecificInfo()), signature, getPublicKey())) {
+                try (FileOutputStream fos = new FileOutputStream(licenseFile)) {
+                    fos.write(signature);
+                }
+            }
+
         }
+    }
+
+    public static PublicKey getPublicKey() {
+        File publicKeyFile = new File("public.key");
+
+        try {
+
+            FileInputStream publicKeyIStream = new FileInputStream(publicKeyFile);
+            byte[] keyBytes = new byte[(int) publicKeyFile.length()];
+            publicKeyIStream.read(keyBytes);
+
+            X509EncodedKeySpec keySpec = new X509EncodedKeySpec(keyBytes);
+            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+            PublicKey publicKey = keyFactory.generatePublic(keySpec);
+
+            publicKeyIStream.close();
+            return publicKey;
+
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException | IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+        return null;
+
+    }
+
+    public static byte[] encryptHwSpecificInfo() {
+        PublicKey publicKey = getPublicKey();
+        String hwSpecificInfo = getHwSpecificInfo();
+
+        Cipher encryptCipher;
+        try {
+            encryptCipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+            encryptCipher.init(Cipher.ENCRYPT_MODE, publicKey);
+            byte[] hwBytes = hwSpecificInfo.getBytes(StandardCharsets.UTF_8);
+            byte[] hwEncrypted = encryptCipher.doFinal(hwBytes);
+
+            return hwEncrypted;
+        } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException
+                | BadPaddingException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        return null;
+
     }
 
     public static String getHwSpecificInfo() {
@@ -160,9 +218,23 @@ public class Client {
             sig.update(digestToVerify);
             verifies = sig.verify(sigToVerify);
         } catch (NoSuchAlgorithmException | InvalidKeyException | SignatureException e) {
-            e.printStackTrace();
+            return false;
         }
         return verifies;
+
+    }
+
+    public static byte[] hash(String hwSpecificInfo) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("MD5");
+            byte[] hashedBytes = digest.digest(hwSpecificInfo.getBytes(StandardCharsets.UTF_8));
+            return hashedBytes;
+
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+
+        return null;
 
     }
 }
