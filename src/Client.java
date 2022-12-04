@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.Arrays;
 
 import javax.crypto.*;
 
@@ -11,7 +12,9 @@ public class Client {
     public static void main(String[] args) throws Exception {
 
         System.out.println("Client started...");
-
+        System.out.println("My MAC: " + getMac());
+        System.out.println("My Disk ID: " + getDriverSerialNumber());
+        System.out.println("My Motherboard ID: " + getSystemMotherBoard_SerialNumber());
         File licenseFile = new File("license.txt");
         byte[] signature;
 
@@ -38,10 +41,23 @@ public class Client {
             System.out.println("Client -- Raw License Text: " + getHwSpecificInfo());
             // encrypting and sending the data to the License manager
             byte[] encryptedData = encryptHwSpecificInfo();
+            String encryptedString = new String(encryptedData, StandardCharsets.UTF_8);
             System.out
-                    .println("Client -- Encrypted License Text: " + new String(encryptedData, StandardCharsets.UTF_8));
+                    .println("Client -- Encrypted License Text: " + encryptedString);
+
+            byte[] hash = hash(getHwSpecificInfo());
+            String[] hexadecimal = new String[hash.length];
+            for (int i = 0; i < hash.length; i++) {
+                hexadecimal[i] = String.format("%02x", hash[i]);
+            }
+
+            String hexString = "";
+            for (String s : hexadecimal) {
+                hexString += s;
+            }
+
             System.out.println(
-                    "Client -- MD5 License Text: " + new String(hash(getHwSpecificInfo()), StandardCharsets.UTF_8));
+                    "Client -- MD5 License Text: " + hexString);
             signature = LicenseManager.main(encryptedData);
 
             // verifying the signature
@@ -118,9 +134,6 @@ public class Client {
 
         hwSpecificInfo += "$" + getMac() + "$" + getDriverSerialNumber() + "$" + getSystemMotherBoard_SerialNumber();
 
-        System.out.println("My MAC: " + getMac());
-        System.out.println("My Disk ID: " + getDriverSerialNumber());
-        System.out.println("My Motherboard ID: " + getSystemMotherBoard_SerialNumber());
         return hwSpecificInfo;
     }
 
@@ -174,9 +187,9 @@ public class Client {
     }
 
     /**
-     * Method for get System Motherboard Serial Number
+     * Returns motherboard serial number
      * 
-     * @return MAC Address
+     * @return motherboard serial number
      */
     public static String getSystemMotherBoard_SerialNumber() {
 
@@ -208,6 +221,8 @@ public class Client {
             System.err.println("Windows MotherBoard Exp : " + E.getMessage());
         }
 
+        // hard coded this part because my custom laptops motherboard id returned as
+        // "Not Applicable"
         if (result.trim().equals("Not Applicable")) {
             result = "201075710502043";
         }

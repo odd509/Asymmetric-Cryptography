@@ -113,7 +113,18 @@ public class LicenseManager {
         try {
             MessageDigest digest = MessageDigest.getInstance("MD5");
             byte[] hashedBytes = digest.digest(hwSpecificInfo.getBytes(StandardCharsets.UTF_8));
-            System.out.println("Server -- MD5 Plain License Text: " + new String(hashedBytes, StandardCharsets.UTF_8));
+
+            String[] hexadecimal = new String[hashedBytes.length];
+            for (int i = 0; i < hashedBytes.length; i++) {
+                hexadecimal[i] = String.format("%02x", hashedBytes[i]);
+            }
+
+            String hexString = "";
+            for (String s : hexadecimal) {
+                hexString += s;
+            }
+
+            System.out.println("Server -- MD5 Plain License Text: " + hexString);
             return hashedBytes;
 
         } catch (NoSuchAlgorithmException e) {
