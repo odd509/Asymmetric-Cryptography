@@ -10,12 +10,30 @@ import javax.crypto.*;
 
 public class LicenseManager {
 
+    /**
+     * License manager's main function receives the RSA encrypted data in order to
+     * "sign" it.
+     * 
+     * @param hwEncrypted RSA encrypted data
+     * @return the signature (back to the Client side)
+     */
     public static byte[] main(byte[] hwEncrypted) {
+        System.out.println("LicenseManager service started...");
         byte[] signature = signData(hash(decryptHwSpecificInfo(hwEncrypted)), getPrivateKey());
+        System.out.println("Server -- Digital Signature: " + new String(signature, StandardCharsets.UTF_8));
         return signature;
     }
 
+    /**
+     * Decrypts the received info with javax.crypto class' RSA scheme.
+     * 
+     * @param hwEncrypted
+     * @return the decrypted device specific info
+     */
     public static String decryptHwSpecificInfo(byte[] hwEncrypted) {
+        System.out.println("Server -- Server is being requested...");
+        System.out.println("Server -- Incoming Encrypted Text: " + new String(hwEncrypted, StandardCharsets.UTF_8));
+        // instantiating the private key from the given file
         PrivateKey privateKey = getPrivateKey();
 
         Cipher decryptCipher;
@@ -25,15 +43,22 @@ public class LicenseManager {
 
             String decrypted = new String(decryptCipher.doFinal(hwEncrypted));
 
+            System.out.println("Server -- Decrypted Text: " + decrypted);
             return decrypted;
         } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException
                 | BadPaddingException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
         return null;
     }
 
+    /**
+     * Signs the data using java security signature class ("SHA256WithRSA" scheme).
+     * 
+     * @param digest  the MD5 hashed data
+     * @param privKey
+     * @return signature of the hashed data
+     */
     public static byte[] signData(byte[] digest, PrivateKey privKey) {
         byte[] signature = null;
         try {
@@ -48,6 +73,12 @@ public class LicenseManager {
         return signature;
     }
 
+    /**
+     * Reads and instantiates the private key object from the given private key
+     * file.
+     * 
+     * @return private key object
+     */
     public static PrivateKey getPrivateKey() {
         File publicKeyFile = new File("private.key");
 
@@ -65,7 +96,6 @@ public class LicenseManager {
             return privateKey;
 
         } catch (NoSuchAlgorithmException | InvalidKeySpecException | IOException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
 
@@ -73,10 +103,17 @@ public class LicenseManager {
 
     }
 
+    /**
+     * Hashes the given hardware specific data with MD5.
+     * 
+     * @param hwSpecificInfo hardware specific info
+     * @return MD5 digest
+     */
     public static byte[] hash(String hwSpecificInfo) {
         try {
             MessageDigest digest = MessageDigest.getInstance("MD5");
             byte[] hashedBytes = digest.digest(hwSpecificInfo.getBytes(StandardCharsets.UTF_8));
+            System.out.println("Server -- MD5 Plain License Text: " + new String(hashedBytes, StandardCharsets.UTF_8));
             return hashedBytes;
 
         } catch (NoSuchAlgorithmException e) {

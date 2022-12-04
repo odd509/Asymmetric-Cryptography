@@ -1,46 +1,67 @@
-
 import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
-import java.util.Arrays;
-import java.util.Scanner;
 
 import javax.crypto.*;
 
 public class Client {
     public static void main(String[] args) throws Exception {
 
+        System.out.println("Client started...");
+
         File licenseFile = new File("license.txt");
         byte[] signature;
+
+        // Checking whether the license file exists.
         if (licenseFile.exists()) {
             FileInputStream licenseIStream = new FileInputStream(licenseFile);
             signature = new byte[(int) licenseFile.length()];
             licenseIStream.read(signature);
             licenseIStream.close();
 
+            // Checking whether the license file is genuine or corrupted
             if (verifySig(hash(getHwSpecificInfo()), signature, getPublicKey())) {
-                System.out.println("ture");
+                System.out.println("Succeed. The license is correct.");
             } else {
-                System.out.println("flsase");
+                System.out.println("The license file has been broken!!");
+                // if the license file is corrupt, deleting it and calling the main function
+                // in order to create a new license
                 licenseFile.delete();
                 Client.main(args);
             }
 
-        } else {
+        } else { // if the license file does not exist
+            System.out.println("Client -- License file is not found.");
+            System.out.println("Client -- Raw License Text: " + getHwSpecificInfo());
+            // encrypting and sending the data to the License manager
+            byte[] encryptedData = encryptHwSpecificInfo();
+            System.out
+                    .println("Client -- Encrypted License Text: " + new String(encryptedData, StandardCharsets.UTF_8));
+            System.out.println(
+                    "Client -- MD5 License Text: " + new String(hash(getHwSpecificInfo()), StandardCharsets.UTF_8));
+            signature = LicenseManager.main(encryptedData);
 
-            signature = LicenseManager.main(encryptHwSpecificInfo());
+            // verifying the signature
             if (verifySig(hash(getHwSpecificInfo()), signature, getPublicKey())) {
+                // creating the license text file
                 try (FileOutputStream fos = new FileOutputStream(licenseFile)) {
                     fos.write(signature);
+                    System.out.println(
+                            "Client -- Succeed. The license file content is secured and signed by the server.");
                 }
             }
 
         }
     }
 
+    /**
+     * Reads and instantiates the public key object from the public key file.
+     * 
+     * @return public key object
+     */
     public static PublicKey getPublicKey() {
         File publicKeyFile = new File("public.key");
 
@@ -58,14 +79,18 @@ public class Client {
             return publicKey;
 
         } catch (NoSuchAlgorithmException | InvalidKeySpecException | IOException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
 
         return null;
-
     }
 
+    /**
+     * Encrypts the hardware data with javax.crypto cipher class'
+     * "RSA/ECB/PKCS1Padding" scheme.
+     * 
+     * @return encrypted data
+     */
     public static byte[] encryptHwSpecificInfo() {
         PublicKey publicKey = getPublicKey();
         String hwSpecificInfo = getHwSpecificInfo();
@@ -80,7 +105,6 @@ public class Client {
             return hwEncrypted;
         } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException
                 | BadPaddingException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
         return null;
@@ -93,6 +117,10 @@ public class Client {
         String hwSpecificInfo = username + "$" + serialNumber;
 
         hwSpecificInfo += "$" + getMac() + "$" + getDriverSerialNumber() + "$" + getSystemMotherBoard_SerialNumber();
+
+        System.out.println("My MAC: " + getMac());
+        System.out.println("My Disk ID: " + getDriverSerialNumber());
+        System.out.println("My Motherboard ID: " + getSystemMotherBoard_SerialNumber());
         return hwSpecificInfo;
     }
 
@@ -113,7 +141,6 @@ public class Client {
             macAddress = String.join(":", hexadecimal);
 
         } catch (UnknownHostException | SocketException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
 
@@ -210,6 +237,15 @@ public class Client {
         return sNum;
     }
 
+    /**
+     * Verifies the given signature by creating a new signature instance from the
+     * original data.
+     * 
+     * @param digestToVerify hash of the original hardware data
+     * @param sigToVerify    signature to verify
+     * @param pubKey         public key instance
+     * @return boolean
+     */
     public static boolean verifySig(byte[] digestToVerify, byte[] sigToVerify, PublicKey pubKey) {
         boolean verifies = false;
         try {
@@ -221,9 +257,14 @@ public class Client {
             return false;
         }
         return verifies;
-
     }
 
+    /**
+     * Hashes the given hardware specific data with MD5.
+     * 
+     * @param hwSpecificInfo hardware specific info
+     * @return MD5 digest
+     */
     public static byte[] hash(String hwSpecificInfo) {
         try {
             MessageDigest digest = MessageDigest.getInstance("MD5");
@@ -235,6 +276,5 @@ public class Client {
         }
 
         return null;
-
     }
 }
