@@ -4,7 +4,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
-import java.util.Arrays;
 
 import javax.crypto.*;
 
@@ -127,6 +126,11 @@ public class Client {
 
     }
 
+    /**
+     * Gets hardware info and concatenates them
+     * 
+     * @return concatenated hardware info
+     */
     public static String getHwSpecificInfo() {
         String username = "abt";
         String serialNumber = "1234-5678-9012";
@@ -137,6 +141,12 @@ public class Client {
         return hwSpecificInfo;
     }
 
+    /**
+     * 
+     * Gets the mac address of the device
+     * 
+     * @return mac adress
+     */
     public static String getMac() {
 
         InetAddress localHost;
@@ -159,6 +169,13 @@ public class Client {
 
         return macAddress;
     }
+
+    /**
+     * 
+     * Gets the driver serial number of the device
+     * 
+     * @return
+     */
 
     public static String getDriverSerialNumber() {
         String result = "";
@@ -187,7 +204,8 @@ public class Client {
     }
 
     /**
-     * Returns motherboard serial number
+     * Returns motherboard serial number.
+     * Default return value for "Not Applicable" is "201075710502043"
      * 
      * @return motherboard serial number
      */
@@ -229,27 +247,6 @@ public class Client {
 
         return result.trim();
 
-    }
-
-    /**
-     * Method for get Linux Machine MotherBoard Serial Number
-     * 
-     * @return
-     */
-    private static String GetLinuxMotherBoard_serialNumber() {
-        String command = "dmidecode -s baseboard-serial-number";
-        String sNum = null;
-        try {
-            Process SerNumProcess = Runtime.getRuntime().exec(command);
-            BufferedReader sNumReader = new BufferedReader(new InputStreamReader(SerNumProcess.getInputStream()));
-            sNum = sNumReader.readLine().trim();
-            SerNumProcess.waitFor();
-            sNumReader.close();
-        } catch (Exception ex) {
-            System.err.println("Linux Motherboard Exp : " + ex.getMessage());
-            sNum = null;
-        }
-        return sNum;
     }
 
     /**
