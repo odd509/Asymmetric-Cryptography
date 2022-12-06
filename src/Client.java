@@ -132,8 +132,8 @@ public class Client {
      * @return concatenated hardware info
      */
     public static String getHwSpecificInfo() {
-        String username = "abt";
-        String serialNumber = "1234-5678-9012";
+        String username = "ouz";
+        String serialNumber = "4444-5090-4444";
         String hwSpecificInfo = username + "$" + serialNumber;
 
         hwSpecificInfo += "$" + getMac() + "$" + getDriverSerialNumber() + "$" + getSystemMotherBoard_SerialNumber();
