@@ -1,18 +1,30 @@
-## Getting Started
+## How to use
 
-Welcome to the VS Code Java world. Here is a guideline to help you get started to write Java code in Visual Studio Code.
+The software is a licensing framework that makes a request as client, checks the validity and 
+integrity of the license file and / or generates a new license. First, compile the code with 
+“javac *.java” then run the compiled code with “java Client”. 
 
-## Folder Structure
+The program takes no arguments and is designed to work inside Windows environment. The 
+development java version is java 15.0.2. 
 
-The workspace contains two folders by default, where:
+A public and private key pair must be provided with the names public.key and private.key
+Sample pair is provided.
 
-- `src`: the folder to maintain sources
-- `lib`: the folder to maintain dependencies
 
-Meanwhile, the compiled output files will be generated in the `bin` folder by default.
+### Notes
 
-> If you want to customize the folder structure, open `.vscode/settings.json` and update the related settings there.
+My custom laptop could not retrieve motherboard serial 
+number and gave the result: "Not Applicable". So I hard coded that case to return 
+"201075710502043"
 
-## Dependency Management
+Default user values: 
+Username: “ouz” 
+serialNumber “4444-5090-4444”
 
-The `JAVA PROJECTS` view allows you to manage your dependencies. More details can be found [here](https://github.com/microsoft/vscode-java-dependency#manage-dependencies).
+
+## Developed by
+
+[odd509](https://github.com/odd509) and [bitsima](https://github.com/bitsima)
+
+![Semodd](/assets/semodd.png)
+
